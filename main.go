@@ -203,9 +203,14 @@ func DbGenerator(dsn, dirname string, tables []string) {
 		section_package := "package " + package_name + "\n\n"
 
 		section_import := ""
+		packages := []string{}
 		if strings.Contains(code, "sql.NullString") {
-			section_import = "import \"database/sql\"\n\n"
+			packages = append(packages, "\"database/sql\"")
 		}
+		if strings.Contains(code, "time.Time") {
+			packages = append(packages, "\"time\"")
+		}
+		section_import = "import (\n    " + strings.Join(packages, "\n    ") + "\n)\n\n"
 
 		code = section_package + section_import + code
 
