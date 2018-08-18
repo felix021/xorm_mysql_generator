@@ -76,6 +76,7 @@ func ParseColumn(column map[string][]byte) []string {
 	switch string(column["Key"]) {
 	case "PRI":
 		tags = append(tags, "pk")
+		go_type = "int64"
 	case "UNI":
 		tags = append(tags, "unique")
 	case "MUL":
@@ -94,14 +95,12 @@ func ParseColumn(column map[string][]byte) []string {
 	if string(column["Null"]) == "NO" {
 		tags = append(tags, "notnull")
 	} else {
-		if go_type == "string" {
-			go_type = "sql.NullString"
-		}
+		go_type = "*" + go_type
 	}
 
 	default_value := string(column["Default"])
 	if default_value != "" {
-		if go_type == "string" || go_type == "sql.NullString" {
+		if go_type == "string" || go_type == "*string" {
 			default_value = "'" + default_value + "'"
 		}
 		tags = append(tags, "default("+default_value+")")
@@ -204,13 +203,12 @@ func DbGenerator(dsn, dirname string, tables []string) {
 
 		section_import := ""
 		packages := []string{}
-		if strings.Contains(code, "sql.NullString") {
-			packages = append(packages, "\"database/sql\"")
-		}
 		if strings.Contains(code, "time.Time") {
 			packages = append(packages, "\"time\"")
 		}
-		section_import = "import (\n    " + strings.Join(packages, "\n    ") + "\n)\n\n"
+		if len(packages) > 0 {
+			section_import = "import (\n    " + strings.Join(packages, "\n    ") + "\n)\n\n"
+		}
 
 		code = section_package + section_import + code
 
